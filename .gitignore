@@ -1,0 +1,12 @@
+# Environment — NEVER commit these
+.env
+.env.local
+.env.production
+
+# Runtime
+positions.json
+node_modules/
+dist/
+
+# OS
+.DS_Store
