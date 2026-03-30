@@ -70,12 +70,26 @@ export async function findNewPairs(chain = CONFIG.TARGET_CHAIN): Promise<{ profi
     const buyRatio = (buysH1 + sellsH1) > 0 ? buysH1 / (buysH1 + sellsH1) : 0;
     const mcap = pair.marketCap ?? pair.fdv ?? 0;
 
-    if (ageMs > CONFIG.MAX_PAIR_AGE_MS) continue;
-    if (liq < CONFIG.MIN_LIQUIDITY_USD) continue;
-    if (volH1 < CONFIG.MIN_VOLUME_H1_USD) continue;
-    if (buyRatio < CONFIG.MIN_BUY_RATIO) continue;
-    if (mcap > CONFIG.MAX_MARKET_CAP) continue;
+    const symbol = pair.baseToken?.symbol ?? profile.tokenAddress.slice(0, 8);
+    const ageMin = Math.round(ageMs / 60000);
 
+    if (ageMs > CONFIG.MAX_PAIR_AGE_MS) {
+      console.log(`  ✗ ${symbol} — too old (${ageMin}m)`); continue;
+    }
+    if (liq < CONFIG.MIN_LIQUIDITY_USD) {
+      console.log(`  ✗ ${symbol} — low liq ($${Math.round(liq).toLocaleString()})`); continue;
+    }
+    if (volH1 < CONFIG.MIN_VOLUME_H1_USD) {
+      console.log(`  ✗ ${symbol} — low vol ($${Math.round(volH1).toLocaleString()}/h)`); continue;
+    }
+    if (buyRatio < CONFIG.MIN_BUY_RATIO) {
+      console.log(`  ✗ ${symbol} — weak buys (${(buyRatio * 100).toFixed(0)}%)`); continue;
+    }
+    if (mcap > CONFIG.MAX_MARKET_CAP) {
+      console.log(`  ✗ ${symbol} — mcap too high ($${Math.round(mcap).toLocaleString()})`); continue;
+    }
+
+    console.log(`  ✓ ${symbol} — age ${ageMin}m | liq $${Math.round(liq).toLocaleString()} | vol $${Math.round(volH1).toLocaleString()}/h | buys ${(buyRatio * 100).toFixed(0)}% | mcap $${Math.round(mcap).toLocaleString()}`);
     results.push({ profile, pair });
   }
 

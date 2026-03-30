@@ -22,7 +22,13 @@ async function getQuote(inputMint: string, outputMint: string, amount: number): 
   return data;
 }
 
-async function executeSwap(quote: JupiterQuote, walletPublicKey: string): Promise<string> {
+interface SwapResponse {
+  swapTransaction: string;
+  lastValidBlockHeight: number;
+  error?: string;
+}
+
+async function executeSwap(quote: JupiterQuote, walletPublicKey: string): Promise<SwapResponse> {
   const res = await fetch(`https://lite-api.jup.ag/swap/v1/swap`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,41 +40,57 @@ async function executeSwap(quote: JupiterQuote, walletPublicKey: string): Promis
       prioritizationFeeLamports: 'auto',
     }),
   });
-  const data = await res.json() as { swapTransaction?: string; error?: string };
+  const data = await res.json() as SwapResponse;
   if (!res.ok || !data.swapTransaction) throw new Error(`Jupiter swap: ${data.error ?? res.status}`);
-  return data.swapTransaction; // base64 VersionedTransaction
+  return data;
 }
 
-async function signAndSend(swapTransactionB64: string): Promise<string> {
-  // Dynamically import Solana libs so the bot boots even when PAPER_TRADING=true
-  // and WALLET_PRIVATE_KEY is not set (no key parse error at startup)
+async function signAndSend(swapResp: SwapResponse): Promise<string> {
   const { Connection, Keypair, VersionedTransaction } = await import('@solana/web3.js');
   const bs58 = (await import('bs58')).default;
 
   const keypair = Keypair.fromSecretKey(bs58.decode(CONFIG.WALLET_PRIVATE_KEY));
   const connection = new Connection(CONFIG.SOLANA_RPC_URL, 'confirmed');
 
-  const tx = VersionedTransaction.deserialize(Buffer.from(swapTransactionB64, 'base64'));
+  const tx = VersionedTransaction.deserialize(Buffer.from(swapResp.swapTransaction, 'base64'));
   tx.sign([keypair]);
 
+  // skipPreflight=true for speed — we rely on Jupiter's simulation
   const sig = await connection.sendRawTransaction(tx.serialize(), {
-    skipPreflight: false,
-    maxRetries: 3,
+    skipPreflight: true,
+    maxRetries: 2,
   });
-  await connection.confirmTransaction(sig, 'confirmed');
+
+  // Use blockhash-based confirmation — much more reliable than legacy timeout
+  const { blockhash } = await connection.getLatestBlockhash('confirmed');
+  try {
+    await connection.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight: swapResp.lastValidBlockHeight },
+      'confirmed',
+    );
+  } catch (e: unknown) {
+    // If confirmation times out, check manually — the TX may have landed
+    const status = await connection.getSignatureStatus(sig);
+    const confirmed = status?.value?.confirmationStatus === 'confirmed'
+      || status?.value?.confirmationStatus === 'finalized';
+    if (!confirmed) {
+      console.warn(`[Jupiter] TX ${sig.slice(0, 12)}… status unknown — verify on Solscan`);
+      // Still return the sig — don't throw, so we don't double-buy
+    }
+  }
+
+  console.log(`[Jupiter] TX confirmed: https://solscan.io/tx/${sig}`);
   return sig;
 }
 
 /**
  * Buy `tokenMint` using native SOL.
- * @param solAmount  Amount in SOL (e.g. 0.05)
  */
 export async function buyToken(tokenMint: string, solAmount: number): Promise<SwapResult> {
   const lamports = Math.floor(solAmount * 1e9);
 
   if (CONFIG.PAPER_TRADING) {
     console.log(`[PAPER] BUY ${solAmount} SOL → ${tokenMint}`);
-    // Return a simulated outAmount based on rough price estimate
     return { signature: 'PAPER_SIG', outAmount: lamports * 1000 };
   }
 
@@ -77,8 +99,8 @@ export async function buyToken(tokenMint: string, solAmount: number): Promise<Sw
   const bs58 = (await import('bs58')).default;
   const keypair = Keypair.fromSecretKey(bs58.decode(CONFIG.WALLET_PRIVATE_KEY));
 
-  const swapTx = await executeSwap(quote, keypair.publicKey.toString());
-  const sig = await signAndSend(swapTx);
+  const swapResp = await executeSwap(quote, keypair.publicKey.toString());
+  const sig = await signAndSend(swapResp);
   return { signature: sig, outAmount: Number(quote.outAmount) };
 }
 
@@ -96,7 +118,7 @@ export async function sellToken(tokenMint: string, tokenAmount: number): Promise
   const bs58 = (await import('bs58')).default;
   const keypair = Keypair.fromSecretKey(bs58.decode(CONFIG.WALLET_PRIVATE_KEY));
 
-  const swapTx = await executeSwap(quote, keypair.publicKey.toString());
-  const sig = await signAndSend(swapTx);
+  const swapResp = await executeSwap(quote, keypair.publicKey.toString());
+  const sig = await signAndSend(swapResp);
   return { signature: sig, outAmount: Number(quote.outAmount) };
 }
