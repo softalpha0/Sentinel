@@ -8,8 +8,8 @@ export const CONFIG = {
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '',
 
   // Solana
-  SOLANA_RPC_URL: process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com',
-  WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY ?? '',
+  SOLANA_RPC_URL: (process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com').trim(),
+  WALLET_PRIVATE_KEY: (process.env.WALLET_PRIVATE_KEY ?? '').trim().replace(/['"]/g, ''),
 
   // RugCheck
   RUGCHECK_API_KEY: process.env.RUGCHECK_API_KEY ?? '',
