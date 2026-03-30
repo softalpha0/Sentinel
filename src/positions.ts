@@ -10,7 +10,15 @@ import { sellToken } from './jupiter.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // RAILWAY_VOLUME_MOUNT_PATH is set when a Railway volume is attached
 // Falls back to project root for local development
-const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? path.join(__dirname, '..');
+const DATA_DIR = (() => {
+  const dir = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? path.join(__dirname, '..');
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {
+    // Directory already exists or we can't create it — fall through
+  }
+  return dir;
+})();
 const STORE_PATH = path.join(DATA_DIR, 'positions.json');
 
 const store = new Map<string, Position>();
