@@ -128,7 +128,13 @@ export abstract class AgentBase {
       const h = msg as HeartbeatMsg;
       if (h.agentId === this.agentId) return;
       const peer = this.peers.get(h.agentId);
-      if (peer) peer.lastSeen = Date.now();
+      if (peer) {
+        peer.lastSeen = Date.now();
+      } else {
+        // Peer missed the discovery announcement — recover from heartbeat
+        this.peers.set(h.agentId, { agentId: h.agentId, role: h.role, lastSeen: Date.now() });
+        console.log(`[${this.agentId}] Peer discovered via heartbeat: ${h.agentId} (${h.role})`);
+      }
     }
   }
 
