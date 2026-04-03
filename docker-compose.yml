@@ -1,0 +1,27 @@
+version: '3.8'
+
+# FoxMQ — MQTT 5.0 broker built on Vertex P2P consensus
+# https://github.com/tashigit/foxmq
+#
+# First-time setup (run once):
+#   ./swarm/foxmq-init.sh
+#
+# Then:
+#   docker compose up -d foxmq
+
+services:
+  foxmq:
+    image: ghcr.io/tashigit/foxmq:latest
+    container_name: foxmq
+    ports:
+      - "1883:1883"    # MQTT (plain TCP)
+      - "8080:8080"    # MQTT over WebSocket
+    volumes:
+      - ./foxmq.d:/foxmq.d
+    command: run --secret-key-file=/foxmq.d/key_0.pem --allow-anonymous-login
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1883"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

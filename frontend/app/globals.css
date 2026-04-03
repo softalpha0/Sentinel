@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: theme('colors.zinc.800');
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  ::selection {
+    @apply bg-sky-500/30 text-white;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-black;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700 rounded-full;
+  }
+}
+
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+
+  .dot-grid {
+    background-image: radial-gradient(circle at 1px 1px, #27272a 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+
+  .glow-blue {
+    background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(14,165,233,0.07), transparent);
+  }
+
+  .card {
+    @apply bg-zinc-950 border border-zinc-800/60 rounded-xl;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border;
+  }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}

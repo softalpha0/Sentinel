@@ -10,6 +10,7 @@ import { buyToken, sellToken } from './src/jupiter.js';
 import { openPosition, closePosition, getOpenPositions, getAllPositions, startMonitor } from './src/positions.js';
 import { sendAlert, fmtBuy } from './src/telegram.js';
 import { startScanner } from './src/scanner.js';
+import { startApiServer } from './src/api-server.js';
 import type { Position } from './src/types.js';
 
 const agent = new Agent({
@@ -249,6 +250,13 @@ agent.addCapability({
 // ── Start autonomous loops ────────────────────────────────────────────────────
 startMonitor();
 startScanner();
+
+// ── Start x402 Intelligence API (if Stellar key configured) ──────────────────
+if (CONFIG.STELLAR_SECRET_KEY) {
+  startApiServer();
+} else {
+  console.log('[x402] STELLAR_SECRET_KEY not set — Intelligence API disabled');
+}
 
 agent.start();
 console.log(`

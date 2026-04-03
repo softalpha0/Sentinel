@@ -39,4 +39,9 @@ export const CONFIG = {
 
   // Chain
   TARGET_CHAIN: process.env.TARGET_CHAIN ?? 'solana',
+
+  // Stellar / x402
+  STELLAR_SECRET_KEY: (process.env.STELLAR_SECRET_KEY ?? '').trim(),
+  STELLAR_NETWORK: (process.env.STELLAR_NETWORK ?? 'testnet') as 'testnet' | 'mainnet',
+  STELLAR_API_PORT: Number(process.env.STELLAR_API_PORT ?? '7379'),
 } as const;

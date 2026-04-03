@@ -8,6 +8,13 @@ positions.json
 node_modules/
 dist/
 
+# FoxMQ broker (binary + generated keys — foxmq.d/ lives inside bin/)
+bin/
+
+# Next.js build output
+frontend/.next/
+frontend/node_modules/
+
 # OS
 .DS_Store
 package-lock.json

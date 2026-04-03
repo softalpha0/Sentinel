@@ -3,17 +3,33 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "start": "node --import tsx/esm index.ts",
-    "dev": "PAPER_TRADING=true node --import tsx/esm index.ts"
+    "start": "node --import tsx/esm src/api-server.ts",
+    "start:agent": "node --import tsx/esm index.ts",
+    "dev": "PAPER_TRADING=true node --import tsx/esm index.ts",
+    "swarm": "bash swarm/start-swarm.sh",
+    "swarm:scanner": "node --import tsx/esm swarm/scanner-agent.ts",
+    "swarm:risk": "node --import tsx/esm swarm/risk-agent.ts",
+    "swarm:consensus": "node --import tsx/esm swarm/consensus-agent.ts",
+    "swarm:execution": "node --import tsx/esm swarm/execution-agent.ts",
+    "foxmq:init": "bash swarm/foxmq-init.sh",
+    "foxmq:start": "cd bin && ./foxmq run --secret-key-file=foxmq.d/key_0.pem --allow-anonymous-login",
+    "foxmq:cluster-init": "bash swarm/foxmq-cluster-init.sh",
+    "foxmq:cluster-start": "bash swarm/start-cluster.sh",
+    "swarm:cluster": "bash swarm/start-swarm-cluster.sh"
   },
   "dependencies": {
     "@openserv-labs/sdk": "^1.0.0",
-    "@solana/web3.js": "^1.98.0",
+    "@solana/web3.js": "1.98.4",
+    "@stellar/stellar-sdk": "^14.6.1",
     "@types/express": "^5.0.6",
     "bs58": "^5.0.0",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
+    "mqtt": "^5.0.0",
     "zod": "^3.0.0"
+  },
+  "overrides": {
+    "@babel/runtime": "7.28.6"
   },
   "engines": {
     "node": ">=22.0.0",
