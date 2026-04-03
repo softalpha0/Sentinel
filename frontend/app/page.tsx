@@ -79,7 +79,7 @@ export default function Home() {
       <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
         <div className="inline-flex items-center gap-2 text-xs border border-zinc-800 bg-zinc-950 text-zinc-400 px-3 py-1.5 rounded-full mb-8">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Vertex Swarm Challenge 2026 · Track 3 — The Agent Economy
+          Built on Tashi · Vertex P2P Consensus
         </div>
         <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight leading-tight mb-5">
           A leaderless AI swarm<br />
@@ -206,7 +206,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-zinc-900 py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-700">
-          <span>Risk Sentinel · Vertex Swarm Challenge 2026</span>
+          <span>Risk Sentinel · Built on Tashi</span>
           <div className="flex items-center gap-4">
             <Link href="/swarm" className="hover:text-zinc-400 transition-colors">Swarm</Link>
             <Link href="/dashboard" className="hover:text-zinc-400 transition-colors">Dashboard</Link>
