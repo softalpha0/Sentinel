@@ -74,8 +74,9 @@ export default function SwarmPage() {
     async function connect() {
       const mqtt = (await import('mqtt')).default;
 
-      // Connect via WebSocket to FoxMQ
-      mqttClient = mqtt.connect('ws://localhost:8080', {
+      // Connect via WebSocket to FoxMQ — configurable for Railway deployment
+      const brokerUrl = process.env.NEXT_PUBLIC_FOXMQ_WS_URL ?? 'ws://localhost:8080';
+      mqttClient = mqtt.connect(brokerUrl, {
         clientId: `swarm-dashboard-${Math.random().toString(36).slice(2, 8)}`,
         keepalive: 60,
         reconnectPeriod: 3000,
@@ -226,7 +227,7 @@ export default function SwarmPage() {
         {/* Not connected banner */}
         {!connected && (
           <div className="card border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-400">
-            Cannot reach FoxMQ WebSocket at <code className="bg-amber-500/10 px-1 rounded">ws://localhost:8080</code>.
+            Cannot reach FoxMQ WebSocket at <code className="bg-amber-500/10 px-1 rounded">{process.env.NEXT_PUBLIC_FOXMQ_WS_URL ?? 'ws://localhost:8080'}</code>.
             Make sure the broker is running:{' '}
             <code className="bg-amber-500/10 px-1 rounded">npm run foxmq:start</code>
           </div>
