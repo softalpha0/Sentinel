@@ -33,6 +33,7 @@ function StatCard({ label, value, sub, online }: { label: string; value: string;
 export default function Dashboard() {
   const [balance, setBalance] = useState<BalanceData | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
+  const [totalEarned, setTotalEarned] = useState<number>(0);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +47,19 @@ export default function Dashboard() {
         setBalance(b as BalanceData);
         setStats(s as StatsData);
         setError(false);
+
+        // Sum incoming XLM payments from Horizon
+        const pub = (b as BalanceData).publicKey;
+        const net = (b as BalanceData).network;
+        const base = net === 'mainnet' ? 'https://horizon.stellar.org' : 'https://horizon-testnet.stellar.org';
+        const pr = await fetch(`${base}/accounts/${pub}/payments?order=desc&limit=200&include_failed=false`);
+        if (pr.ok) {
+          const pd = await pr.json() as { _embedded: { records: Record<string, unknown>[] } };
+          const sum = (pd._embedded?.records ?? [])
+            .filter(r => r['type'] === 'payment' && r['to'] === pub)
+            .reduce((acc, r) => acc + parseFloat(String(r['amount'] ?? 0)), 0);
+          setTotalEarned(sum);
+        }
       } catch {
         setError(true);
       } finally {
@@ -53,7 +67,7 @@ export default function Dashboard() {
       }
     }
     load();
-    const t = setInterval(load, 5000);
+    const t = setInterval(load, 8000);
     return () => clearInterval(t);
   }, []);
 
@@ -107,8 +121,8 @@ export default function Dashboard() {
               />
               <StatCard
                 label="Total earned"
-                value={stats ? `${stats.totalEarnedUsdc.toFixed(4)} XLM` : '—'}
-                sub="This session"
+                value={totalEarned > 0 ? `${totalEarned.toFixed(4)} XLM` : '—'}
+                sub="All incoming payments"
               />
               <StatCard
                 label="API calls"
