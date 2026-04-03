@@ -21,6 +21,47 @@ export function createApiServer() {
   const app = express();
   const network = CONFIG.STELLAR_NETWORK === 'mainnet' ? 'stellar-mainnet' : 'stellar-testnet';
 
+  // ── Root: HTML landing page ───────────────────────────────────────────────────
+
+  app.get('/', (_req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk Sentinel — Intelligence API</title>
+  <style>
+    body { font-family: monospace; background: #000; color: #e4e4e7; margin: 0; padding: 40px; }
+    h1 { color: #fff; font-size: 1.4rem; margin-bottom: 4px; }
+    p.sub { color: #71717a; margin-top: 0; font-size: 0.85rem; }
+    table { border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 24px; }
+    th { text-align: left; color: #71717a; font-size: 0.75rem; padding: 6px 12px; border-bottom: 1px solid #27272a; }
+    td { padding: 8px 12px; font-size: 0.85rem; border-bottom: 1px solid #18181b; }
+    .free { color: #34d399; } .paid { color: #f59e0b; }
+    .addr { color: #818cf8; font-size: 0.8rem; word-break: break-all; margin-top: 24px; }
+    a { color: #38bdf8; }
+  </style>
+</head>
+<body>
+  <h1>Risk Sentinel Intelligence API</h1>
+  <p class="sub">Autonomous Solana memecoin risk analysis · Powered by Vertex P2P swarm · Payments via Stellar x402</p>
+  <table>
+    <tr><th>Endpoint</th><th>Price</th><th>Description</th></tr>
+    <tr><td>GET /health</td><td class="free">free</td><td>API status &amp; pricing</td></tr>
+    <tr><td>GET /balance</td><td class="free">free</td><td>Wallet balance</td></tr>
+    <tr><td>GET /stats</td><td class="free">free</td><td>Call counts &amp; earnings</td></tr>
+    <tr><td>GET /rug-check?token=&lt;address&gt;</td><td class="paid">0.02 XLM</td><td>Rug safety analysis</td></tr>
+    <tr><td>GET /score?token=&lt;address&gt;</td><td class="paid">0.01 XLM</td><td>Composite 0–100 score</td></tr>
+    <tr><td>GET /scan</td><td class="paid">0.05 XLM</td><td>Full market scan</td></tr>
+    <tr><td>POST /mpp/session</td><td class="paid">prepay</td><td>Multi-call session</td></tr>
+  </table>
+  <p class="addr">Pay to: <strong>${getStellarPublicKey()}</strong> · Network: ${network}</p>
+  <p class="addr" style="color:#71717a">Send XLM · include tx hash as <code>X-Payment: &lt;txHash&gt;</code> header · <a href="/health">View full spec</a></p>
+</body>
+</html>`);
+  });
+
   // ── Free: discovery ───────────────────────────────────────────────────────────
 
   app.get('/health', (_req, res) => {
