@@ -15,7 +15,9 @@
     "foxmq:start": "cd bin && ./foxmq run --secret-key-file=foxmq.d/key_0.pem --allow-anonymous-login",
     "foxmq:cluster-init": "bash swarm/foxmq-cluster-init.sh",
     "foxmq:cluster-start": "bash swarm/start-cluster.sh",
-    "swarm:cluster": "bash swarm/start-swarm-cluster.sh"
+    "swarm:cluster": "bash swarm/start-swarm-cluster.sh",
+    "consumer": "node --import tsx/esm consumer-agent.ts",
+    "consumer:loop": "LOOP=true node --import tsx/esm consumer-agent.ts"
   },
   "dependencies": {
     "@openserv-labs/sdk": "^1.0.0",

@@ -211,7 +211,19 @@ async function run() {
   console.log(`${'─'.repeat(50)}\n`);
 }
 
-run().catch(e => {
-  console.error('Consumer agent error:', e);
-  process.exit(1);
-});
+const LOOP_INTERVAL_MS = Number(process.env.LOOP_INTERVAL_MS ?? '300000'); // default 5 minutes
+
+async function loop() {
+  while (true) {
+    await run().catch(e => console.error('Run error:', e));
+    console.log(`\n⏳  Next run in ${LOOP_INTERVAL_MS / 1000}s…\n`);
+    await new Promise(r => setTimeout(r, LOOP_INTERVAL_MS));
+  }
+}
+
+const LOOP = process.env.LOOP === 'true';
+if (LOOP) {
+  loop().catch(e => { console.error(e); process.exit(1); });
+} else {
+  run().catch(e => { console.error('Consumer agent error:', e); process.exit(1); });
+}
