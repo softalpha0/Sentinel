@@ -122,11 +122,16 @@ export default function SwarmPage() {
 
         // ── Heartbeat ──────────────────────────────────────────────────────
         if (topic === 'swarm/heartbeat') {
-          const { agentId, stats: peerStats } = msg as { agentId: string; stats?: Record<string, number> };
+          const { agentId, role, stellarAddress, stats: peerStats } = msg as { agentId: string; role: AgentRole; stellarAddress?: string; stats?: Record<string, number> };
           setPeers(prev => {
             const next = new Map(prev);
             const peer = next.get(agentId as string);
-            if (peer) next.set(agentId as string, { ...peer, lastSeen: Date.now(), stats: peerStats });
+            if (peer) {
+              next.set(agentId as string, { ...peer, lastSeen: Date.now(), stats: peerStats });
+            } else {
+              // Agent was already online when dashboard connected — populate from heartbeat
+              next.set(agentId as string, { agentId, role, stellarAddress, lastSeen: Date.now(), stats: peerStats });
+            }
             return next;
           });
         }
