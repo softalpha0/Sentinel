@@ -1,83 +1,202 @@
 import Link from 'next/link';
-import Header from '@/components/Header';
-import HowItWorks from '@/components/HowItWorks';
-import PricingTable from '@/components/PricingTable';
 import LiveCounter from '@/components/LiveCounter';
-import FlowDiagram from '@/components/FlowDiagram';
+
+const agents = [
+  {
+    role: 'Scanner',
+    color: 'sky',
+    border: 'border-sky-500/30',
+    bg: 'bg-sky-500/5',
+    dot: 'bg-sky-400',
+    text: 'text-sky-400',
+    description: 'Polls DexScreener every 60s for new Solana pairs. Filters by liquidity, volume, age, and buy pressure.',
+    action: 'Pays 0.1 XLM →',
+  },
+  {
+    role: 'Risk Agent ×2',
+    color: 'amber',
+    border: 'border-amber-500/30',
+    bg: 'bg-amber-500/5',
+    dot: 'bg-amber-400',
+    text: 'text-amber-400',
+    description: 'Verifies Stellar payment, runs RugCheck.xyz, scores token 0–100 across 6 dimensions independently.',
+    action: 'Reports →',
+  },
+  {
+    role: 'Consensus',
+    color: 'violet',
+    border: 'border-violet-500/30',
+    bg: 'bg-violet-500/5',
+    dot: 'bg-violet-400',
+    text: 'text-violet-400',
+    description: 'Byzantine quorum in 8s window. Majority vote required — one hard-fail blocks the trade entirely.',
+    action: 'Decides →',
+  },
+  {
+    role: 'Execution',
+    color: 'emerald',
+    border: 'border-emerald-500/30',
+    bg: 'bg-emerald-500/5',
+    dot: 'bg-emerald-400',
+    text: 'text-emerald-400',
+    description: 'Executes Jupiter swap on BUY decision. Monitors positions with TP/SL. Deduplicates by requestId.',
+    action: null,
+  },
+];
+
+const endpoints = [
+  { method: 'GET', path: '/rug-check', price: '0.02 XLM', desc: 'Full rug safety report — mint authority, freeze, holder concentration, rug score' },
+  { method: 'GET', path: '/score', price: '0.01 XLM', desc: 'Composite 0–100 score across age, volume, momentum, buy pressure, social, rug safety' },
+  { method: 'GET', path: '/scan', price: '0.05 XLM', desc: 'Full market scan — returns all pairs passing filters with scores right now' },
+  { method: 'POST', path: '/mpp/session', price: 'prepay budget', desc: 'Open a multi-call session — pay once, call multiple endpoints until budget is spent' },
+];
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white">
-      <Header />
+
+      {/* Nav */}
+      <nav className="sticky top-0 z-40 h-12 border-b border-zinc-900 bg-black/80 backdrop-blur-xl flex items-center px-6">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+          <span className="text-sm font-medium text-white">Risk Sentinel</span>
+        </div>
+        <div className="ml-auto flex items-center gap-4 text-xs text-zinc-500">
+          <Link href="/swarm" className="hover:text-white transition-colors">Swarm</Link>
+          <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+          <a
+            href="https://sentinel-production-d008.up.railway.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-7 px-3 bg-white text-black font-medium rounded-md hover:bg-zinc-100 transition-colors flex items-center"
+          >
+            API Live
+          </a>
+        </div>
+      </nav>
 
       {/* Hero */}
-      <section className="relative pt-40 pb-28 px-5 overflow-hidden">
-        {/* Subtle background effects */}
-        <div className="absolute inset-0 dot-grid opacity-40" />
-        <div className="absolute inset-0 glow-blue pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-40 bg-gradient-to-b from-transparent via-sky-500/40 to-transparent" />
+      <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
+        <div className="inline-flex items-center gap-2 text-xs border border-zinc-800 bg-zinc-950 text-zinc-400 px-3 py-1.5 rounded-full mb-8">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Vertex Swarm Challenge 2026 · Track 3 — The Agent Economy
+        </div>
+        <h1 className="text-5xl sm:text-6xl font-semibold tracking-tight leading-tight mb-5">
+          A leaderless AI swarm<br />
+          <span className="text-zinc-500">that trades Solana memecoins.</span>
+        </h1>
+        <p className="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed mb-8">
+          Four specialized agents coordinate over Vertex P2P (FoxMQ). Agents pay each other in XLM on Stellar for every analysis. The swarm sells its intelligence as a paid API — no subscriptions, no API keys.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <Link href="/swarm" className="h-9 px-5 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors flex items-center gap-1.5">
+            Live Swarm Dashboard
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </Link>
+          <Link href="/dashboard" className="h-9 px-5 bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:border-zinc-700 transition-all">
+            API Dashboard
+          </Link>
+        </div>
+        <LiveCounter />
+      </section>
 
-        <div className="relative max-w-4xl mx-auto">
-          {/* Badge */}
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2 text-xs border border-zinc-800 bg-zinc-950 text-zinc-400 px-3 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Agents on Stellar Hackathon · 2026
-            </div>
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-center text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.08] mb-6">
-            Solana intelligence,
-            <br />
-            <span className="text-zinc-400">paid per call on Stellar.</span>
-          </h1>
-
-          <p className="text-center text-lg text-zinc-400 max-w-xl mx-auto mb-10 leading-relaxed">
-            Risk Sentinel sells memecoin rug-check and scoring intelligence
-            via x402 micropayments. No subscriptions. No API keys.
+      {/* Agent Pipeline */}
+      <section className="border-t border-zinc-900 py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600 mb-2">Swarm Architecture</p>
+          <h2 className="text-2xl font-semibold mb-2">Four agents. Zero coordinator.</h2>
+          <p className="text-zinc-500 text-sm mb-10 max-w-xl">
+            Every agent runs independently over FoxMQ — Tashi's MQTT 5.0 broker built on Vertex P2P BFT consensus. Agents pay each other on Stellar for every token analyzed.
           </p>
 
-          <div className="flex items-center justify-center gap-3">
-            <Link
-              href="/dashboard"
-              className="h-9 px-4 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors flex items-center gap-1.5"
-            >
-              View Dashboard
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-9 px-4 bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:border-zinc-700 hover:text-white transition-all flex items-center gap-1.5"
-            >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-              Source
-            </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {agents.map((agent, i) => (
+              <div key={agent.role} className={`relative border ${agent.border} ${agent.bg} rounded-xl p-5`}>
+                {/* Step number */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className={`text-xs font-mono font-medium ${agent.text}`}>0{i + 1}</span>
+                  <span className={`w-2 h-2 rounded-full ${agent.dot} animate-pulse`} />
+                </div>
+                <p className="text-sm font-semibold text-white mb-2">{agent.role}</p>
+                <p className="text-xs text-zinc-500 leading-relaxed mb-4">{agent.description}</p>
+                {agent.action && (
+                  <div className={`text-xs font-mono ${agent.text} flex items-center gap-1`}>
+                    {agent.action}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
-          <LiveCounter />
+          {/* Payment flow callout */}
+          <div className="mt-4 flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-xl px-5 py-4">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+              <span className="text-sky-400 text-xs">★</span>
+            </div>
+            <div>
+              <p className="text-sm text-white font-medium">Stellar micropayments between agents</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Scanner sends 0.1 XLM to each risk agent on Stellar testnet before publishing a candidate. Risk agents verify on Horizon and reject unverified candidates — autonomous economic enforcement with no human in the loop.</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <FlowDiagram />
+      {/* API section */}
+      <section className="border-t border-zinc-900 py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600 mb-2">Intelligence API</p>
+          <h2 className="text-2xl font-semibold mb-2">The swarm sells what it knows.</h2>
+          <p className="text-zinc-500 text-sm mb-10 max-w-xl">
+            Pay per call in XLM via the x402 protocol. Send XLM to the producer address, pass the tx hash as <code className="text-zinc-400 bg-zinc-900 px-1 rounded">X-Payment</code> — get intelligence back.
+          </p>
 
-      <HowItWorks />
-      <PricingTable />
+          <div className="space-y-2">
+            {endpoints.map(ep => (
+              <div key={ep.path} className="flex items-start gap-4 bg-zinc-950 border border-zinc-800 rounded-xl px-5 py-4 hover:border-zinc-700 transition-colors">
+                <span className="text-xs font-mono text-zinc-600 w-10 shrink-0 pt-0.5">{ep.method}</span>
+                <span className="text-sm font-mono text-zinc-200 w-36 shrink-0">{ep.path}</span>
+                <span className="text-sm text-amber-400 font-medium w-28 shrink-0">{ep.price}</span>
+                <span className="text-xs text-zinc-500 leading-relaxed">{ep.desc}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center gap-3">
+            <a
+              href="https://sentinel-production-d008.up.railway.app/health"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1"
+            >
+              View live API spec
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Built on */}
-      <section className="py-20 px-5 border-t border-zinc-900">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600 text-center mb-8">Built on</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-            {['Stellar', 'x402 Protocol', 'MPP', 'Solana', 'RugCheck.xyz', 'DexScreener', 'Jupiter'].map(name => (
-              <span key={name} className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors cursor-default">
-                {name}
+      <section className="border-t border-zinc-900 py-14 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-700 text-center mb-6">Built on</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+            {[
+              { name: 'Vertex P2P', highlight: true },
+              { name: 'FoxMQ', highlight: true },
+              { name: 'Stellar', highlight: false },
+              { name: 'x402 Protocol', highlight: false },
+              { name: 'OpenServ', highlight: false },
+              { name: 'Solana', highlight: false },
+              { name: 'Jupiter', highlight: false },
+              { name: 'RugCheck.xyz', highlight: false },
+              { name: 'DexScreener', highlight: false },
+            ].map(item => (
+              <span key={item.name} className={`text-sm transition-colors cursor-default ${item.highlight ? 'text-sky-400' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                {item.name}
               </span>
             ))}
           </div>
@@ -85,20 +204,13 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 py-8 px-5">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-600">
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-              <span className="w-1.5 h-1.5 rounded-sm bg-sky-400/70" />
-            </span>
-            Risk Sentinel · Agents on Stellar Hackathon 2026
-          </div>
+      <footer className="border-t border-zinc-900 py-8 px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-700">
+          <span>Risk Sentinel · Vertex Swarm Challenge 2026</span>
           <div className="flex items-center gap-4">
-            <span>Stellar x402</span>
-            <span className="text-zinc-800">·</span>
-            <span>MPP Sessions</span>
-            <span className="text-zinc-800">·</span>
-            <span>Solana Intelligence</span>
+            <Link href="/swarm" className="hover:text-zinc-400 transition-colors">Swarm</Link>
+            <Link href="/dashboard" className="hover:text-zinc-400 transition-colors">Dashboard</Link>
+            <a href="https://sentinel-production-d008.up.railway.app" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">API</a>
           </div>
         </div>
       </footer>
