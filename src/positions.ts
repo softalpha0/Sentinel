@@ -8,22 +8,19 @@ import { fetchPairPrice } from './dexscreener.js';
 import { sellToken } from './jupiter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// RAILWAY_VOLUME_MOUNT_PATH is set when a Railway volume is attached
-// Falls back to project root for local development
+
 const DATA_DIR = (() => {
   const dir = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? path.join(__dirname, '..');
   try {
     fs.mkdirSync(dir, { recursive: true });
   } catch {
-    // Directory already exists or we can't create it — fall through
+    /* ignore */
   }
   return dir;
 })();
+
 const STORE_PATH = path.join(DATA_DIR, 'positions.json');
-
 const store = new Map<string, Position>();
-
-// Tracks positions currently being closed — prevents double-trigger race condition
 const closing = new Set<string>();
 
 function persist(): void {
@@ -74,7 +71,6 @@ export function closePosition(
 }
 
 async function executeClose(pos: Position, reason: 'TP' | 'SL', currentPrice: number): Promise<void> {
-  // Guard: skip if already closing or closed
   if (closing.has(pos.id) || pos.status === 'closed') return;
   closing.add(pos.id);
 
@@ -96,7 +92,6 @@ export function startMonitor(): NodeJS.Timeout {
   let running = false;
 
   return setInterval(async () => {
-    // Skip if previous interval hasn't finished — prevents overlapping runs
     if (running) return;
     running = true;
 
@@ -105,14 +100,13 @@ export function startMonitor(): NodeJS.Timeout {
       if (!open.length) return;
 
       for (const pos of open) {
-        if (closing.has(pos.id)) continue; // already being closed
+        if (closing.has(pos.id)) continue;
 
         let currentPrice = 0;
         try {
           const chain = pos.tokenAddress.startsWith('0x') ? 'ethereum' : 'solana';
           currentPrice = await fetchPairPrice(chain, pos.pairAddress);
         } catch {
-          // Network blip — skip this tick, try again next interval
           continue;
         }
 

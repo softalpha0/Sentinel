@@ -6,13 +6,12 @@ import { buyToken } from '../src/jupiter.js';
 import { openPosition, getOpenPositions, startMonitor } from '../src/positions.js';
 import { CONFIG } from '../src/config.js';
 import type { Position } from '../src/types.js';
+import { sendAlert, fmtBuy } from '../src/telegram.js';
 
 export class ExecutionAgent extends AgentBase {
   private monitorHandle?: ReturnType<typeof startMonitor>;
   private executedCount = 0;
   private skippedCount = 0;
-  // Track requestIds we've already acted on — critical: only ONE execution agent
-  // should trade per decision. We accept the first and ignore duplicates.
   private executed = new Set<string>();
 
   constructor() {
@@ -38,8 +37,6 @@ export class ExecutionAgent extends AgentBase {
     };
   }
 
-  // ── Startup / shutdown ────────────────────────────────────────────────────
-
   startMonitoring(): void {
     this.monitorHandle = startMonitor();
     console.log(`[${this.agentId}] TP/SL monitor started.`);
@@ -49,18 +46,14 @@ export class ExecutionAgent extends AgentBase {
     if (this.monitorHandle) clearInterval(this.monitorHandle);
   }
 
-  // ── Peer fault tolerance ──────────────────────────────────────────────────
-
   protected onPeerLeft(peer: SwarmPeer): void {
     if (peer.role === 'consensus') {
-      console.warn(`[${this.agentId}] Consensus agent ${peer.agentId} went offline — will wait for another.`);
+      console.warn(`[${this.agentId}] Consensus agent ${peer.agentId} went offline.`);
     }
   }
 
-  // ── Decision handling ─────────────────────────────────────────────────────
-
   private async handleDecision(msg: ConsensusDecisionMsg): Promise<void> {
-    if (this.executed.has(msg.requestId)) return; // already handled
+    if (this.executed.has(msg.requestId)) return;
     this.executed.add(msg.requestId);
 
     const { tokenAddress, symbol, decision, score, rugScore, reason, pair } = msg;
@@ -72,7 +65,6 @@ export class ExecutionAgent extends AgentBase {
       return;
     }
 
-    // ── Guard: check capacity ────────────────────────────────────────────────
     const open = getOpenPositions();
     if (open.length >= CONFIG.MAX_OPEN_POSITIONS) {
       const detail = `Max open positions (${CONFIG.MAX_OPEN_POSITIONS}) reached`;
@@ -82,7 +74,6 @@ export class ExecutionAgent extends AgentBase {
       return;
     }
 
-    // ── Guard: not already holding this token ────────────────────────────────
     if (open.some(p => p.tokenAddress === tokenAddress)) {
       const detail = `Already holding ${symbol}`;
       console.log(`[${this.agentId}] SKIP ${symbol} — ${detail}`);
@@ -91,7 +82,6 @@ export class ExecutionAgent extends AgentBase {
       return;
     }
 
-    // ── Execute buy ──────────────────────────────────────────────────────────
     console.log(`[${this.agentId}] BUY ${symbol} | score ${score} | rug ${rugScore}`);
 
     let swapResult;
@@ -124,15 +114,22 @@ export class ExecutionAgent extends AgentBase {
     openPosition(position);
     this.executedCount++;
 
+    sendAlert(fmtBuy(
+      symbol,
+      tokenAddress,
+      entryPrice,
+      CONFIG.MAX_BUY_SOL,
+      score,
+      CONFIG.TAKE_PROFIT_X,
+      CONFIG.STOP_LOSS_FRACTION,
+      CONFIG.PAPER_TRADING,
+    ));
+
     const mode = CONFIG.PAPER_TRADING ? '[PAPER]' : '[LIVE]';
-    console.log(
-      `[${this.agentId}] ${mode} Bought ${symbol} — tx ${swapResult.signature.slice(0, 12)}…`
-    );
+    console.log(`[${this.agentId}] ${mode} Bought ${symbol} — tx ${swapResult.signature.slice(0, 12)}…`);
 
-    await this.confirm(msg.requestId, tokenAddress, symbol, 'bought',
-      `${mode} tx=${swapResult.signature}`);
+    await this.confirm(msg.requestId, tokenAddress, symbol, 'bought', `${mode} tx=${swapResult.signature}`);
 
-    // Prune executed set — keep last 500
     if (this.executed.size > 500) {
       const entries = [...this.executed];
       entries.slice(0, entries.length - 500).forEach(k => this.executed.delete(k));
@@ -158,8 +155,6 @@ export class ExecutionAgent extends AgentBase {
     await this.publish(TOPICS.EXECUTION, msg);
   }
 }
-
-// ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if (process.argv[1]?.endsWith('execution-agent.ts') || process.argv[1]?.endsWith('execution-agent.js')) {
   const BROKER = process.env.FOXMQ_URL ?? 'mqtt://127.0.0.1:1883';
