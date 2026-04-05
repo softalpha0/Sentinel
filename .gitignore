@@ -21,3 +21,7 @@ package-lock.json
 
 # Claude Code
 .claude/
+
+# Config
+.env.example
+.gitignore
