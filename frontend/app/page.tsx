@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import LiveCounter from '@/components/LiveCounter';
 
 const agents = [
@@ -57,8 +58,8 @@ export default function Home() {
 
       {/* Nav */}
       <nav className="sticky top-0 z-40 h-12 border-b border-zinc-900 bg-black/80 backdrop-blur-xl flex items-center px-6">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+        <div className="flex items-center gap-2">
+          <Image src="/logo.svg" alt="Risk Sentinel" width={24} height={24} />
           <span className="text-sm font-medium text-white">Risk Sentinel</span>
         </div>
         <div className="ml-auto flex items-center gap-4 text-xs text-zinc-500">
