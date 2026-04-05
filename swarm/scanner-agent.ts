@@ -11,7 +11,6 @@ export class ScannerAgent extends AgentBase {
   private scanTimer?: ReturnType<typeof setInterval>;
   private scannedCount = 0;
   private publishedCount = 0;
-  // token address → last published timestamp (2h cooldown prevents re-emitting same token)
   private cooldown = new Map<string, number>();
   private readonly COOLDOWN_MS = 2 * 60 * 60 * 1000;
 
@@ -19,23 +18,16 @@ export class ScannerAgent extends AgentBase {
     super('scanner');
   }
 
-  protected async subscribeToTopics(): Promise<void> {
-    // Scanner only listens to swarm base topics (discovery/heartbeat) — no additional subs
-  }
+  protected async subscribeToTopics(): Promise<void> {}
 
-  protected handleMessage(_topic: string, _msg: unknown): void {
-    // Scanner is a pure producer — no incoming domain messages to handle
-  }
+  protected handleMessage(_topic: string, _msg: unknown): void {}
 
   protected getStats(): Record<string, number> {
     return { scanned: this.scannedCount, published: this.publishedCount };
   }
 
-  // ── Start / stop ──────────────────────────────────────────────────────────
-
   startScanning(intervalMs = CONFIG.SCAN_INTERVAL_MS): void {
     console.log(`[${this.agentId}] Scanner started — interval ${intervalMs / 1000}s`);
-    // First scan immediately
     void this.scan();
     this.scanTimer = setInterval(() => void this.scan(), intervalMs);
   }
@@ -43,8 +35,6 @@ export class ScannerAgent extends AgentBase {
   stopScanning(): void {
     if (this.scanTimer) clearInterval(this.scanTimer);
   }
-
-  // ── Scan loop ─────────────────────────────────────────────────────────────
 
   private async scan(): Promise<void> {
     console.log(`[${this.agentId}] Scanning DexScreener…`);
@@ -64,13 +54,11 @@ export class ScannerAgent extends AgentBase {
     }
 
     for (const { pair } of candidates) {
-      // Deduplicate by token address with 2h cooldown (survives restarts via TTL logic)
       const key = pair.baseToken.address;
       const lastSeen = this.cooldown.get(key) ?? 0;
       if (Date.now() - lastSeen < this.COOLDOWN_MS) continue;
       this.cooldown.set(key, Date.now());
 
-      // Pay each online risk agent for the analysis
       const riskPeerList = this.peersWithRole('risk');
       let stellarTxHash: string | undefined;
       let stellarFrom: string | undefined;
@@ -80,9 +68,9 @@ export class ScannerAgent extends AgentBase {
           const hash = await payForAnalysis(riskPeer.stellarAddress, `req-${pair.baseToken.symbol.slice(0, 10)}`);
           if (hash) {
             stellarTxHash = hash;
-            try { stellarFrom = getStellarPublicKey(); } catch { /* no key */ }
+            try { stellarFrom = getStellarPublicKey(); } catch { /* ignore */ }
           }
-          break; // pay once — first risk agent; others share the analysis result
+          break;
         }
       }
 
@@ -99,11 +87,9 @@ export class ScannerAgent extends AgentBase {
       this.publishedCount++;
       console.log(`[${this.agentId}] Published candidate: ${pair.baseToken.symbol} (${msg.requestId.slice(0, 8)})`);
 
-      // Rate-limit: 1s between candidates to avoid hammering risk agents
       await sleep(1000);
     }
 
-    // Prune expired cooldown entries
     const cutoff = Date.now() - this.COOLDOWN_MS;
     for (const [k, ts] of this.cooldown) {
       if (ts < cutoff) this.cooldown.delete(k);
@@ -114,8 +100,6 @@ export class ScannerAgent extends AgentBase {
 function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }
-
-// ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if (process.argv[1]?.endsWith('scanner-agent.ts') || process.argv[1]?.endsWith('scanner-agent.js')) {
   const BROKER = process.env.FOXMQ_URL ?? 'mqtt://127.0.0.1:1883';

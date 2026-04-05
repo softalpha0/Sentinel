@@ -9,11 +9,9 @@ import { verifyAnalysisPayment, formatPrice } from './payment.js';
 export class RiskAgent extends AgentBase {
   private processedCount = 0;
   private passedCount = 0;
-  // Deduplicate: one risk agent shouldn't analyze the same requestId twice
   private seen = new Set<string>();
 
   constructor(stellarAddress?: string) {
-    // stellarAddress exposed in discovery so other agents know where to send payment
     super('risk', stellarAddress);
   }
 
@@ -32,8 +30,6 @@ export class RiskAgent extends AgentBase {
     return { processed: this.processedCount, passed: this.passedCount };
   }
 
-  // ── Candidate processing ───────────────────────────────────────────────────
-
   private async handleCandidate(msg: CandidateMsg): Promise<void> {
     if (this.seen.has(msg.requestId)) return;
     this.seen.add(msg.requestId);
@@ -42,7 +38,6 @@ export class RiskAgent extends AgentBase {
     const symbol = pair.baseToken.symbol;
     const mint = pair.baseToken.address;
 
-    // ── Payment verification (only if this agent has a Stellar address) ────
     if (this.stellarAddress) {
       if (!stellarTxHash) {
         console.warn(`[${this.agentId}] SKIP ${symbol} — no payment (requires ${formatPrice()})`);
@@ -59,7 +54,6 @@ export class RiskAgent extends AgentBase {
     console.log(`[${this.agentId}] Analyzing ${symbol} (req ${requestId.slice(0, 8)})…`);
     this.processedCount++;
 
-    // ── Step 1: Rug check ──────────────────────────────────────────────────
     let rugReport;
     try {
       rugReport = await fetchRugReport(mint);
@@ -69,7 +63,6 @@ export class RiskAgent extends AgentBase {
     }
 
     if (!rugReport) {
-      // Hard disqualified — publish a failed report so consensus doesn't wait
       const report: RiskReportMsg = {
         requestId,
         riskAgentId: this.agentId,
@@ -86,7 +79,6 @@ export class RiskAgent extends AgentBase {
       return;
     }
 
-    // ── Step 2: Composite score ────────────────────────────────────────────
     const tokenScore = scoreToken(pair, rugReport);
     const passed = tokenScore.composite >= CONFIG.MIN_COMPOSITE_SCORE;
     this.passedCount += passed ? 1 : 0;
@@ -110,15 +102,12 @@ export class RiskAgent extends AgentBase {
       `[${this.agentId}] ${symbol} → score ${tokenScore.composite} | rug ${rugReport.score} | ${passed ? '✓ PASS' : '✗ FAIL'}`
     );
 
-    // Prune seen set — keep last 500
     if (this.seen.size > 500) {
       const entries = [...this.seen];
       entries.slice(0, entries.length - 500).forEach(k => this.seen.delete(k));
     }
   }
 }
-
-// ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if (process.argv[1]?.endsWith('risk-agent.ts') || process.argv[1]?.endsWith('risk-agent.js')) {
   const BROKER = process.env.FOXMQ_URL ?? 'mqtt://127.0.0.1:1883';

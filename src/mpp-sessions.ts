@@ -9,10 +9,8 @@ export interface MppSession {
   payerTxHash: string;
 }
 
-// In-memory session store (sufficient for hackathon)
 const sessions = new Map<string, MppSession>();
 
-// Prune sessions older than 2 hours every 15 minutes
 setInterval(() => {
   const cutoff = Date.now() - 2 * 60 * 60 * 1000;
   for (const [id, s] of sessions) {
@@ -50,7 +48,6 @@ export function deductFromSession(
       reason: `Insufficient session balance — ${session.remainingUsdc.toFixed(7)} USDC remaining, need ${amountUsdc}`,
     };
   }
-  // Use integer arithmetic to avoid floating-point drift
   session.remainingUsdc = Math.round((session.remainingUsdc - amountUsdc) * 1e7) / 1e7;
   session.callCount++;
   return { success: true, remaining: session.remainingUsdc };

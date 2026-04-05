@@ -1,46 +1,36 @@
 export const CONFIG = {
-  // OpenServ
   OPENSERV_API_KEY: process.env.OPENSERV_API_KEY_SENTINEL ?? '',
   OPENSERV_AUTH_TOKEN: process.env.OPENSERV_AUTH_TOKEN ?? '',
 
-  // Telegram
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? '',
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID ?? '',
 
-  // Solana
   SOLANA_RPC_URL: (process.env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com').trim(),
   WALLET_PRIVATE_KEY: (process.env.WALLET_PRIVATE_KEY ?? '').trim().replace(/['"]/g, ''),
 
-  // RugCheck
   RUGCHECK_API_KEY: process.env.RUGCHECK_API_KEY ?? '',
 
-  // Jupiter
   JUPITER_SLIPPAGE_BPS: Number(process.env.JUPITER_SLIPPAGE_BPS ?? '1000'),
 
-  // Trading mode — defaults to PAPER for safety
   PAPER_TRADING: process.env.PAPER_TRADING !== 'false',
 
-  // Scan parameters
   SCAN_INTERVAL_MS: Number(process.env.SCAN_INTERVAL_MS ?? '60000'),
   MONITOR_INTERVAL_MS: Number(process.env.MONITOR_INTERVAL_MS ?? '15000'),
-  MAX_PAIR_AGE_MS: Number(process.env.MAX_PAIR_AGE_MS ?? '14400000'),  // 4 hours — profiles land late on DexScreener
-  MIN_LIQUIDITY_USD: Number(process.env.MIN_LIQUIDITY_USD ?? '10000'),  // lowered — scorer penalises low liq anyway
+  MAX_PAIR_AGE_MS: Number(process.env.MAX_PAIR_AGE_MS ?? '14400000'),
+  MIN_LIQUIDITY_USD: Number(process.env.MIN_LIQUIDITY_USD ?? '10000'),
   MIN_VOLUME_H1_USD: Number(process.env.MIN_VOLUME_H1_USD ?? '20000'),
-  MIN_BUY_RATIO: Number(process.env.MIN_BUY_RATIO ?? '0.50'),           // slightly up from 0.45
-  MAX_MARKET_CAP: Number(process.env.MAX_MARKET_CAP ?? '300000'),    // $300k — early stage only
+  MIN_BUY_RATIO: Number(process.env.MIN_BUY_RATIO ?? '0.50'),
+  MAX_MARKET_CAP: Number(process.env.MAX_MARKET_CAP ?? '300000'),
 
-  // Trading limits
   MAX_BUY_SOL: Number(process.env.MAX_BUY_SOL ?? '0.05'),
   MIN_COMPOSITE_SCORE: Number(process.env.MIN_COMPOSITE_SCORE ?? '60'),
   MAX_RUG_SCORE: Number(process.env.MAX_RUG_SCORE ?? '600'),
-  TAKE_PROFIT_X: Number(process.env.TAKE_PROFIT_X ?? '2.0'),            // kept — take profit faster
-  STOP_LOSS_FRACTION: Number(process.env.STOP_LOSS_FRACTION ?? '0.80'), // kept — cut losses at -20%
-  MAX_OPEN_POSITIONS: Number(process.env.MAX_OPEN_POSITIONS ?? '2'),    // kept — concentrate on best picks
+  TAKE_PROFIT_X: Number(process.env.TAKE_PROFIT_X ?? '2.0'),
+  STOP_LOSS_FRACTION: Number(process.env.STOP_LOSS_FRACTION ?? '0.80'),
+  MAX_OPEN_POSITIONS: Number(process.env.MAX_OPEN_POSITIONS ?? '2'),
 
-  // Chain
   TARGET_CHAIN: process.env.TARGET_CHAIN ?? 'solana',
 
-  // Stellar / x402
   STELLAR_SECRET_KEY: (process.env.STELLAR_SECRET_KEY ?? '').trim(),
   STELLAR_NETWORK: (process.env.STELLAR_NETWORK ?? 'testnet') as 'testnet' | 'mainnet',
   STELLAR_API_PORT: Number(process.env.STELLAR_API_PORT ?? '7379'),

@@ -3,7 +3,6 @@ import { TOPICS } from './types.js';
 import type { RiskReportMsg, ConsensusDecisionMsg } from './types.js';
 import { CONFIG } from '../src/config.js';
 
-// How long to wait for additional risk agents to respond before deciding
 const QUORUM_WINDOW_MS = 8_000;
 
 interface PendingQuorum {
@@ -12,7 +11,6 @@ interface PendingQuorum {
 }
 
 export class ConsensusAgent extends AgentBase {
-  // requestId → accumulated risk reports from multiple risk agents
   private quorum = new Map<string, PendingQuorum>();
   private decidedCount = 0;
   private buyCount = 0;
@@ -36,28 +34,21 @@ export class ConsensusAgent extends AgentBase {
     return { decided: this.decidedCount, bought: this.buyCount, pending: this.quorum.size };
   }
 
-  // ── Risk report handling ──────────────────────────────────────────────────
-
   private handleRiskReport(report: RiskReportMsg): void {
     const { requestId } = report;
 
     if (!this.quorum.has(requestId)) {
-      // First report for this requestId — open a quorum window
       const timer = setTimeout(() => this.decide(requestId), QUORUM_WINDOW_MS);
       this.quorum.set(requestId, { reports: [report], timer });
       console.log(`[${this.agentId}] Quorum opened for ${report.symbol} (req ${requestId.slice(0, 8)})`);
     } else {
-      // Additional risk agents responding — accumulate
       const q = this.quorum.get(requestId)!;
-      // Avoid duplicates from the same risk agent
       if (!q.reports.find(r => r.riskAgentId === report.riskAgentId)) {
         q.reports.push(report);
         console.log(`[${this.agentId}] +1 report for ${report.symbol} (${q.reports.length} total)`);
       }
     }
   }
-
-  // ── Decision ──────────────────────────────────────────────────────────────
 
   private async decide(requestId: string): Promise<void> {
     const q = this.quorum.get(requestId);
@@ -70,7 +61,6 @@ export class ConsensusAgent extends AgentBase {
     const symbol = reports[0].symbol;
     const pair   = reports[0].pair;
 
-    // Any hard fail → skip immediately (Byzantine: one bad report is enough to block)
     const hardFail = reports.find(r => !r.passed);
     if (hardFail) {
       await this.publishDecision({
@@ -86,11 +76,8 @@ export class ConsensusAgent extends AgentBase {
       return;
     }
 
-    // Average composite score across all passing reports
     const avgScore  = reports.reduce((s, r) => s + r.score, 0) / reports.length;
     const avgRug    = reports.reduce((s, r) => s + r.rugScore, 0) / reports.length;
-
-    // Simple majority vote: buy if score threshold met
     const buyVotes  = reports.filter(r => r.score >= CONFIG.MIN_COMPOSITE_SCORE).length;
     const majority  = buyVotes > reports.length / 2;
 
@@ -127,8 +114,6 @@ export class ConsensusAgent extends AgentBase {
     );
   }
 }
-
-// ── Entrypoint ────────────────────────────────────────────────────────────────
 
 if (process.argv[1]?.endsWith('consensus-agent.ts') || process.argv[1]?.endsWith('consensus-agent.js')) {
   const BROKER = process.env.FOXMQ_URL ?? 'mqtt://127.0.0.1:1883';

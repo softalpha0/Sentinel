@@ -1,15 +1,3 @@
-/**
- * Swarm micropayment layer — Stellar payments between agents.
- *
- * Flow:
- *   Scanner wants analysis → sends XLM/USDC to risk agent's Stellar address
- *   → includes txHash in CandidateMsg
- *   → risk agent verifies payment on Horizon before processing
- *
- * On testnet: pays in native XLM (0.1 XLM per analysis)
- * On mainnet: pays in USDC (0.01 USDC per analysis)
- */
-
 import {
   Keypair,
   TransactionBuilder,
@@ -23,9 +11,8 @@ import {
 import { CONFIG } from '../src/config.js';
 import { getPaymentAsset, getPaymentAssetLabel, verifyPayment } from '../src/stellar-wallet.js';
 
-// Per-analysis price
-export const ANALYSIS_PRICE_XLM  = '0.1';   // testnet
-export const ANALYSIS_PRICE_USDC = '0.01';  // mainnet
+export const ANALYSIS_PRICE_XLM  = '0.1';
+export const ANALYSIS_PRICE_USDC = '0.01';
 
 const HORIZON_URL: Record<string, string> = {
   testnet: 'https://horizon-testnet.stellar.org',
@@ -45,15 +32,11 @@ function getPrice(): string {
   return CONFIG.STELLAR_NETWORK === 'mainnet' ? ANALYSIS_PRICE_USDC : ANALYSIS_PRICE_XLM;
 }
 
-/**
- * Send a micropayment from this agent's Stellar keypair to a risk agent.
- * Returns the transaction hash, or null if STELLAR_SECRET_KEY is not configured.
- */
 export async function payForAnalysis(
   toAddress: string,
   memo = 'risk-analysis',
 ): Promise<string | null> {
-  if (!CONFIG.STELLAR_SECRET_KEY) return null; // payment disabled — no keypair
+  if (!CONFIG.STELLAR_SECRET_KEY) return null;
 
   const keypair  = Keypair.fromSecret(CONFIG.STELLAR_SECRET_KEY);
   const server   = getServer();
@@ -75,7 +58,7 @@ export async function payForAnalysis(
           amount: price,
         }),
       )
-      .addMemo(Memo.text(memo.slice(0, 28))) // Stellar memo max 28 bytes
+      .addMemo(Memo.text(memo.slice(0, 28)))
       .setTimeout(30)
       .build();
 
@@ -93,10 +76,6 @@ export async function payForAnalysis(
   }
 }
 
-/**
- * Verify that a payment was made to this agent's Stellar address.
- * Returns true if valid, false if missing or insufficient.
- */
 export async function verifyAnalysisPayment(
   txHash: string,
   myAddress: string,
@@ -104,7 +83,6 @@ export async function verifyAnalysisPayment(
   const asset  = getPaymentAsset();
   const price  = parseFloat(getPrice());
 
-  // Free-ride protection disabled if no Stellar key configured
   if (!myAddress) return true;
 
   const result = await verifyPayment(txHash, price, myAddress);
@@ -114,7 +92,6 @@ export async function verifyAnalysisPayment(
   return result.valid;
 }
 
-/** How much this agent has earned (sum of verified incoming payments). */
 export function formatPrice(): string {
   return `${getPrice()} ${getPaymentAssetLabel()}`;
 }
